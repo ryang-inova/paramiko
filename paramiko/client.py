@@ -189,7 +189,8 @@ class SSHClient (object):
 
         # update local host keys from file (in case other SSH clients
         # have written to the known_hosts file meanwhile.
-        self.load_host_keys(filename)
+        if self._host_keys_filename is not None:
+            self.load_host_keys(self._host_keys_filename)
 
         f = open(filename, 'w')
         for hostname, keys in self._host_keys.iteritems():
