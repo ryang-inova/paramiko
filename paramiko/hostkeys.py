@@ -84,7 +84,7 @@ class HostKeyEntry:
             else:
                 log.info("Unable to handle key of type %s" % (keytype,))
                 return None
-        except binascii.Error, e:
+        except binascii.Error as e:
             raise InvalidHostKey(line, e)
 
         return cls(names, key)
@@ -287,7 +287,7 @@ class HostKeys (UserDict.DictMixin):
         if len(entry) == 0:
             self._entries.append(HostKeyEntry([hostname], None))
             return
-        for key_type in entry.keys():
+        for key_type in list(entry.keys()):
             found = False
             for e in self._entries:
                 if (hostname in e.hostnames) and (e.key.get_name() == key_type):
@@ -308,7 +308,7 @@ class HostKeys (UserDict.DictMixin):
 
     def values(self):
         ret = []
-        for k in self.keys():
+        for k in list(self.keys()):
             ret.append(self.lookup(k))
         return ret
 

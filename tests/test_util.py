@@ -21,7 +21,7 @@ Some unit tests for utility functions.
 """
 
 from binascii import hexlify
-import cStringIO
+import io
 import errno
 import os
 import unittest
@@ -65,7 +65,7 @@ class UtilTest(ParamikoTest):
         """
         verify that all the classes can be imported from paramiko.
         """
-        symbols = globals().keys()
+        symbols = list(globals().keys())
         self.assertTrue('Transport' in symbols)
         self.assertTrue('SSHClient' in symbols)
         self.assertTrue('MissingHostKeyPolicy' in symbols)
@@ -101,7 +101,7 @@ class UtilTest(ParamikoTest):
 
     def test_2_parse_config(self):
         global test_config_file
-        f = cStringIO.StringIO(test_config_file)
+        f = io.StringIO(test_config_file)
         config = paramiko.util.parse_ssh_config(f)
         self.assertEquals(config._config,
             [{'host': ['*'], 'config': {}}, {'host': ['*'], 'config': {'identityfile': ['~/.ssh/id_rsa'], 'user': 'robey'}},
@@ -111,10 +111,10 @@ class UtilTest(ParamikoTest):
 
     def test_3_host_config(self):
         global test_config_file
-        f = cStringIO.StringIO(test_config_file)
+        f = io.StringIO(test_config_file)
         config = paramiko.util.parse_ssh_config(f)
 
-        for host, values in {
+        for host, values in list({
             'irc.danger.com':   {'crazy': 'something dumb  ',
                                 'hostname': 'irc.danger.com',
                                 'user': 'robey'},
@@ -126,7 +126,7 @@ class UtilTest(ParamikoTest):
                                 'hostname': 'spoo.example.com',
                                 'user': 'robey',
                                 'port': '3333'}
-        }.items():
+        }.items()):
             values = dict(values,
                 hostname=host,
                 identityfile=[os.path.expanduser("~/.ssh/id_rsa")]
@@ -148,8 +148,8 @@ class UtilTest(ParamikoTest):
         try:
             hostdict = paramiko.util.load_host_keys('hostfile.temp')
             self.assertEquals(2, len(hostdict))
-            self.assertEquals(1, len(hostdict.values()[0]))
-            self.assertEquals(1, len(hostdict.values()[1]))
+            self.assertEquals(1, len(list(hostdict.values())[0]))
+            self.assertEquals(1, len(list(hostdict.values())[1]))
             fp = hexlify(hostdict['secure.example.com']['ssh-rsa'].get_fingerprint()).upper()
             self.assertEquals('E6684DB30E109B67B70FF1DC5C7F1363', fp)
         finally:
@@ -172,7 +172,7 @@ Host *.example.com
 Host *
     Port 3333
     """
-        f = cStringIO.StringIO(test_config_file)
+        f = io.StringIO(test_config_file)
         config = paramiko.util.parse_ssh_config(f)
         host = 'www13.example.com'
         self.assertEquals(
@@ -216,7 +216,7 @@ Host space-delimited
 Host equals-delimited
     ProxyCommand=foo bar=biz baz
 """
-        f = cStringIO.StringIO(conf)
+        f = io.StringIO(conf)
         config = paramiko.util.parse_ssh_config(f)
         for host in ('space-delimited', 'equals-delimited'):
             self.assertEquals(
@@ -228,7 +228,7 @@ Host equals-delimited
         """
         ProxyCommand should perform interpolation on the value
         """
-        config = paramiko.util.parse_ssh_config(cStringIO.StringIO("""
+        config = paramiko.util.parse_ssh_config(io.StringIO("""
 Host specific
     Port 37
     ProxyCommand host %h port %p lol
@@ -264,7 +264,7 @@ Host www13.*
 Host *
     Port 3333
     """
-        f = cStringIO.StringIO(test_config_file)
+        f = io.StringIO(test_config_file)
         config = paramiko.util.parse_ssh_config(f)
         host = 'www13.example.com'
         self.assertEquals(
@@ -283,7 +283,7 @@ ProxyCommand=foo=bar
 Host proxy-without-equal-divisor
 ProxyCommand foo=bar:%h-%p
     """
-        for host, values in {
+        for host, values in list({
             'proxy-with-equal-divisor-and-space'   :{'hostname': 'proxy-with-equal-divisor-and-space',
                                                      'proxycommand': 'foo=bar'},
             'proxy-with-equal-divisor-and-no-space':{'hostname': 'proxy-with-equal-divisor-and-no-space',
@@ -291,9 +291,9 @@ ProxyCommand foo=bar:%h-%p
             'proxy-without-equal-divisor'          :{'hostname': 'proxy-without-equal-divisor',
                                                      'proxycommand':
                                                      'foo=bar:proxy-without-equal-divisor-22'}
-        }.items():
+        }.items()):
 
-            f = cStringIO.StringIO(test_config_file)
+            f = io.StringIO(test_config_file)
             config = paramiko.util.parse_ssh_config(f)
             self.assertEquals(
                 paramiko.util.lookup_ssh_host_config(host, config),
@@ -314,16 +314,16 @@ IdentityFile id_dsa2
 Host dsa2*
 IdentityFile id_dsa22
     """
-        for host, values in {
+        for host, values in list({
             'foo'   :{'hostname': 'foo',
                       'identityfile': ['id_dsa0', 'id_dsa1']},
             'dsa2'  :{'hostname': 'dsa2',
                       'identityfile': ['id_dsa0', 'id_dsa1', 'id_dsa2', 'id_dsa22']},
             'dsa22' :{'hostname': 'dsa22',
                       'identityfile': ['id_dsa0', 'id_dsa1', 'id_dsa22']}
-        }.items():
+        }.items()):
 
-            f = cStringIO.StringIO(test_config_file)
+            f = io.StringIO(test_config_file)
             config = paramiko.util.parse_ssh_config(f)
             self.assertEquals(
                 paramiko.util.lookup_ssh_host_config(host, config),

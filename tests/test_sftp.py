@@ -23,7 +23,7 @@ a real actual sftp server is contacted, and a new folder is created there to
 do test file operations in (so no existing files will be harmed).
 """
 
-from __future__ import with_statement
+
 
 from binascii import hexlify
 import os
@@ -31,7 +31,7 @@ import warnings
 import sys
 import threading
 import unittest
-import StringIO
+import io
 
 import paramiko
 from stub_sftp import StubServer, StubSFTPServer
@@ -140,7 +140,7 @@ class SFTPTest (unittest.TestCase):
 
     def setUp(self):
         global FOLDER
-        for i in xrange(1000):
+        for i in range(1000):
             FOLDER = FOLDER[:-3] + '%03d' % i
             try:
                 sftp.mkdir(FOLDER)
@@ -300,16 +300,16 @@ class SFTPTest (unittest.TestCase):
             f.close()
 
             stat = sftp.stat(FOLDER + '/special')
-            sftp.chmod(FOLDER + '/special', (stat.st_mode & ~0777) | 0600)
+            sftp.chmod(FOLDER + '/special', (stat.st_mode & ~0o777) | 0o600)
             stat = sftp.stat(FOLDER + '/special')
-            expected_mode = 0600
+            expected_mode = 0o600
             if sys.platform == 'win32':
                 # chmod not really functional on windows
-                expected_mode = 0666
+                expected_mode = 0o666
             if sys.platform == 'cygwin':
                 # even worse.
-                expected_mode = 0644
-            self.assertEqual(stat.st_mode & 0777, expected_mode)
+                expected_mode = 0o644
+            self.assertEqual(stat.st_mode & 0o777, expected_mode)
             self.assertEqual(stat.st_size, 1024)
 
             mtime = stat.st_mtime - 3600
@@ -340,17 +340,17 @@ class SFTPTest (unittest.TestCase):
 
             f = sftp.open(FOLDER + '/special', 'r+')
             stat = f.stat()
-            f.chmod((stat.st_mode & ~0777) | 0600)
+            f.chmod((stat.st_mode & ~0o777) | 0o600)
             stat = f.stat()
 
-            expected_mode = 0600
+            expected_mode = 0o600
             if sys.platform == 'win32':
                 # chmod not really functional on windows
-                expected_mode = 0666
+                expected_mode = 0o666
             if sys.platform == 'cygwin':
                 # even worse.
-                expected_mode = 0644
-            self.assertEqual(stat.st_mode & 0777, expected_mode)
+                expected_mode = 0o644
+            self.assertEqual(stat.st_mode & 0o777, expected_mode)
             self.assertEqual(stat.st_size, 1024)
 
             mtime = stat.st_mtime - 3600
@@ -642,23 +642,23 @@ class SFTPTest (unittest.TestCase):
         f.close()
 
         try:
-            sftp.rename(FOLDER + '/something', FOLDER + u'/\u00fcnic\u00f8de')
+            sftp.rename(FOLDER + '/something', FOLDER + '/\u00fcnic\u00f8de')
             sftp.open(FOLDER + '/\xc3\xbcnic\xc3\xb8\x64\x65', 'r')
-        except Exception, e:
+        except Exception as e:
             self.fail('exception ' + e)
         sftp.unlink(FOLDER + '/\xc3\xbcnic\xc3\xb8\x64\x65')
 
     def test_L_utf8_chdir(self):
-        sftp.mkdir(FOLDER + u'\u00fcnic\u00f8de')
+        sftp.mkdir(FOLDER + '\u00fcnic\u00f8de')
         try:
-            sftp.chdir(FOLDER + u'\u00fcnic\u00f8de')
+            sftp.chdir(FOLDER + '\u00fcnic\u00f8de')
             f = sftp.open('something', 'w')
             f.write('okay')
             f.close()
             sftp.unlink('something')
         finally:
             sftp.chdir(None)
-            sftp.rmdir(FOLDER + u'\u00fcnic\u00f8de')
+            sftp.rmdir(FOLDER + '\u00fcnic\u00f8de')
 
     def test_M_bad_readv(self):
         """
@@ -731,7 +731,7 @@ class SFTPTest (unittest.TestCase):
         Send an empty file and confirm it is sent.
         """
         target = FOLDER + '/empty file.txt'
-        stream = StringIO.StringIO()
+        stream = io.StringIO()
         try:
             attrs = sftp.putfo(stream, target)
             # the returned attributes should not be null
